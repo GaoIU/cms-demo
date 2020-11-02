@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
+    <head>
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+        <title>臭臭平台</title>
+        <link rel="icon" th:href="@{/img/cc.png}" />
+        <link rel="stylesheet" th:href="@{/layui/css/layui.css}" media="all" />
+    </head>
+
+    <body style="padding: 15px;">
+        <div class="layui-row layui-col-space10">
+            <form class="layui-form layui-form-pane">
+                <div class="layui-col-md10">
+                    <div class="layui-row layui-col-space5">
+                        <div class="layui-col-md3">
+                            <label class="layui-form-label">客户姓名</label>
+                            <div class="layui-inline">
+                                <input class="layui-input" name="name" autocomplete="off">
+                            </div>
+                        </div>
+
+                        <div class="layui-col-md3">
+                            <label class="layui-form-label">渠道</label>
+                            <div class="layui-inline">
+                                <input class="layui-input" name="channel" autocomplete="off">
+                            </div>
+                        </div>
+
+                        <div class="layui-col-md3">
+                            <label class="layui-form-label">客户情况</label>
+                            <div class="layui-inline">
+                                <select name="customerState">
+                                    <option value=""></option>
+                                    <option value="1">产值可签单</option>
+                                    <option value="2">产值已出</option>
+                                    <option value="3">定金可转换</option>
+                                    <option value="4">跟进中</option>
+                                    <option value="5">无效</option>
+                                    <option value="6">已退单</option>
+                                    <option value="7">已完结</option>
+                                    <option value="8">意向可签单</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="layui-col-md3">
+                            <label class="layui-form-label">生成洽谈</label>
+                            <div class="layui-inline">
+                                <select name="status">
+                                    <option value=""></option>
+                                    <option value="0">否</option>
+                                    <option value="1">是</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="layui-col-md3">
+                            <label class="layui-form-label">开始日期</label>
+                            <div class="layui-inline">
+                                <input class="layui-input" id="beginDate" name="beginDate" autocomplete="off">
+                            </div>
+                        </div>
+
+                        <div class="layui-col-md3">
+                            <label class="layui-form-label">结束日期</label>
+                            <div class="layui-inline">
+                                <input class="layui-input" id="endDate" name="endDate" autocomplete="off">
+                            </div>
+                        </div>
+
+                        <div class="layui-col-md3">
+                            <label class="layui-form-label">楼盘名称</label>
+                            <div class="layui-inline">
+                                <input class="layui-input" name="saleName" autocomplete="off">
+                            </div>
+                        </div>
+
+                        <div class="layui-col-md3">
+                            <label class="layui-form-label">面积</label>
+                            <div class="layui-inline">
+                                <input class="layui-input" type="number" name="saleArea" autocomplete="off">
+                            </div>
+                        </div>
+
+                        <div class="layui-col-md3">
+                            <label class="layui-form-label">营销专员</label>
+                            <div class="layui-inline">
+                                <input class="layui-input" name="marketEmpName" autocomplete="off">
+                            </div>
+                        </div>
+
+                        <div class="layui-col-md3">
+                            <label class="layui-form-label">营销负责人</label>
+                            <div class="layui-inline">
+                                <input class="layui-input" name="marketBelongName" autocomplete="off">
+                            </div>
+                        </div>
+
+                        <div class="layui-col-md3">
+                            <label class="layui-form-label">设计师</label>
+                            <div class="layui-inline">
+                                <input class="layui-input" name="designEmpName" autocomplete="off">
+                            </div>
+                        </div>
+
+                        <div class="layui-col-md3">
+                            <label class="layui-form-label">设计负责人</label>
+                            <div class="layui-inline">
+                                <input class="layui-input" name="designBelongName" autocomplete="off">
+                            </div>
+                        </div>
+
+                        <div class="layui-col-md3">
+                            <label class="layui-form-label">客户经理</label>
+                            <div class="layui-inline">
+                                <input class="layui-input" name="managerName" autocomplete="off">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="layui-col-md2">
+                    <button id="search-btn" type="submit" class="layui-btn" lay-submit="" lay-filter="submit">搜索</button>
+                    <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+                </div>
+            </form>
+        </div>
+
+        <table class="layui-table" id="talkList" lay-filter="talkList" lay-data="{
+                    url: '/orderBasic/query',
+                    where: {status: 1},
+                    toolbar: '#toolbar',
+                    defaultToolbar: ['filter', 'exports'],
+                    page: {layout: ['count', 'prev', 'page', 'next', 'limit', 'refresh', 'skip']},
+                    limit: 10,
+                    limits: [10, 30, 50, 100, 10000],
+                    title: '派单列表',
+                    cellMinWidth: 100,
+                    text: {none: '暂无数据'},
+                    request: {pageName: 'current', limitName: 'size'},
+                    parseData: function(res) {
+                        const status = res.status == 200 ? 0 : res.status;
+                        return {
+                            'code': status,
+                            'msg': res.message,
+                            'count': res.data.total,
+                            'data': res.data.records
+                        }
+                    }
+                }">
+            <thead>
+            <tr>
+                <th lay-data="{field: 'talkNo', title: '派单序号', align: 'center'}"></th>
+                <th lay-data="{field: 'name', title: '客户姓名', align: 'center'}"></th>
+                <th lay-data="{field: 'sex', title: '性别', align: 'center', templet: '#sexTpl'}"></th>
+                <th lay-data="{field: 'mobile', title: '手机号码', align: 'center'}"></th>
+                <th lay-data="{field: 'wechat', title: '微信号', align: 'center'}"></th>
+                <th lay-data="{field: 'talkTime', title: '派单日期', align: 'center'}"></th>
+                <th lay-data="{field: 'customerStateDesc', title: '客户情况', align: 'center', templet: '#customerStateTpl'}"></th>
+                <th lay-data="{field: 'treatyTypeDesc', title: '协议类型', align: 'center'}"></th>
+                <th lay-data="{field: 'treatyDetailDesc', title: '协议详情', align: 'center'}"></th>
+                <th lay-data="{field: 'designTime', title: '设计签订日期', align: 'center'}"></th>
+                <th lay-data="{field: 'outputTime', title: '产值签订日期', align: 'center'}"></th>
+                <th lay-data="{field: 'hardcoverDesc', title: '是否精装', align: 'center'}"></th>
+                <th lay-data="{field: 'saleName', title: '楼盘名称', align: 'center'}"></th>
+                <th lay-data="{field: 'saleNo', title: '房号', align: 'center'}"></th>
+                <th lay-data="{field: 'saleArea', title: '面积', align: 'center'}"></th>
+                <th lay-data="{field: 'residentNum', title: '常驻人口', align: 'center'}"></th>
+                <th lay-data="{field: 'purpose', title: '意向风格', align: 'center'}"></th>
+                <th lay-data="{field: 'salePriceDesc', title: '费用预算（万元）', align: 'center'}"></th>
+                <th lay-data="{field: 'specialNeed', title: '特殊需求', align: 'center'}"></th>
+                <th lay-data="{field: 'address', title: '洽谈地点', align: 'center'}"></th>
+                <th lay-data="{field: 'channel', title: '渠道', align: 'center'}"></th>
+                <th lay-data="{field: 'recommendName', title: '推荐人', align: 'center'}"></th>
+                <th lay-data="{field: 'marketDeptName', title: '营销中心', align: 'center'}"></th>
+                <th lay-data="{field: 'marketEmpName', title: '营销专员', align: 'center'}"></th>
+                <th lay-data="{field: 'marketBelongName', title: '营销负责人', align: 'center'}"></th>
+                <th lay-data="{field: 'designDeptName', title: '设计中心', align: 'center'}"></th>
+                <th lay-data="{field: 'designEmpName', title: '设计师', align: 'center'}"></th>
+                <th lay-data="{field: 'designBelongName', title: '设计负责人', align: 'center'}"></th>
+                <th lay-data="{field: 'managerName', title: '客户经理', align: 'center'}"></th>
+                <th lay-data="{field: 'createTalkTime', title: '生成时间', align: 'center'}"></th>
+                <th lay-data="{fixed: 'right', title: '操作', toolbar: '#toolbar-line', align: 'center', width: '250'}"
+                    sec:authorize="hasAnyAuthority('TALK_DETAIL:LIST:PAGE@GET', 'TALK_DETAIL:VIEW@GET', 'TALK:REMOVE@POST')"></th>
+            </tr>
+            </thead>
+        </table>
+    </body>
+
+    <!--[if lt IE 9]>
+    <script src="https://cdn.staticfile.org/html5shiv/r29/html5.min.js"></script>
+    <script src="https://cdn.staticfile.org/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    <script th:src="@{/layui/layui.js}"></script>
+
+    <script type="text/html" id="sexTpl">
+        {{# if (d.sex == 0) { }}
+            <i class="layui-icon layui-icon-female" style="color: pink"></i>
+        {{# } else if (d.sex == 1) { }}
+            <i class="layui-icon layui-icon-male" style="color: #00B0F5"></i>
+        {{# } else { }}
+            <span>未知</span>
+        {{# } }}
+    </script>
+
+    <script type="text/html" id="customerStateTpl">
+        {{# if (d.customerState == 1) { }}
+            <span class="layui-badge layui-bg-blue">{{ d.customerStateDesc }}</span>
+        {{# } else if (d.customerState == 3) { }}
+            <span class="layui-badge layui-bg-orange">{{ d.customerStateDesc }}</span>
+        {{# } else if (d.customerState == 5) { }}
+            <span class="layui-badge layui-bg-gray">{{ d.customerStateDesc }}</span>
+        {{# } else if (d.customerState == 6) { }}
+            <span class="layui-badge">{{ d.customerStateDesc }}</span>
+        {{# } else if (d.customerState == 7) { }}
+            <span class="layui-badge layui-bg-green">{{ d.customerStateDesc }}</span>
+        {{# } else { }}
+            <span class="layui-badge layui-bg-black">{{ d.customerStateDesc }}</span>
+        {{# } }}
+    </script>
+
+    <script type="text/html" id="toolbar"></script>
+
+    <script type="text/html" id="toolbar-line">
+        <a class="layui-btn layui-btn-xs" lay-event="list" sec:authorize="hasAuthority('TALK_DETAIL:LIST:PAGE@GET')">进度列表</a>
+        <a class="layui-btn layui-btn-xs layui-btn-normal" lay-event="detail" sec:authorize="hasAuthority('TALK_DETAIL:VIEW@GET')">查看进度</a>
+        <a class="layui-btn layui-btn-xs layui-btn-danger" lay-event="del" sec:authorize="hasAuthority('TALK:REMOVE@POST')">删除洽谈</a>
+    </script>
+
+    <script>
+        layui.extend({
+            request: '/js/index/request'
+        }).use(['layer', 'table', 'form', 'jquery', 'request', 'laydate'], function () {
+            const table = layui.table;
+            const form = layui.form;
+            const layer = layui.layer;
+            const $ = layui.jquery;
+            const request = layui.request;
+            const laydate = layui.laydate;
+
+            laydate.render({
+                elem: '#beginDate',
+                calendar: true
+            });
+
+            laydate.render({
+                elem: '#endDate',
+                calendar: true
+            });
+
+            window.refresh = {
+                reloadSearch: function () {
+                    $('#search-btn').trigger('click');
+                }
+            };
+
+            form.on('submit(submit)', function (data) {
+                table.reload('talkList', {
+                    page: {curr: 1},
+                    where: data.field
+                });
+                return false;
+            });
+
+            table.on('tool(talkList)', function (obj) {
+                const data = obj.data;
+                const event = obj.event;
+
+                switch (event) {
+                    case 'list':
+                        talkDetailList(data.id);
+                        break;
+                    case 'detail':
+                        talkDetail(data.id);
+                        break;
+                    case 'del':
+                        delTalk(data.id);
+                        break;
+                };
+            });
+
+            function talkDetailList(id) {
+                const anim = Math.floor(Math.random() * (6 - 0)) + 0;
+                layer.open({
+                    type: 2,
+                    content: ['/talkDetail/page?talkId=' + id, 'auto'],
+                    icon: 0,
+                    shadeClose: true,
+                    title: '洽谈明细',
+                    anim: anim,
+                    area: ['95%', '95%']
+                });
+            }
+            
+            function talkDetail(id) {
+                const anim = Math.floor(Math.random() * (6 - 0)) + 0;
+                layer.open({
+                    type: 2,
+                    content: ['/talkDetail?talkId=' + id, 'auto'],
+                    icon: 0,
+                    shadeClose: true,
+                    title: '洽谈进度',
+                    anim: anim,
+                    area: ['40%', '85%']
+                });
+            }
+
+            function delTalk(id) {
+                const anim = Math.floor(Math.random() * (6 - 0)) + 0;
+                layer.confirm('删除之后可在派单管理重新生成，是否确认删除？', {
+                    anim: anim,
+                    shadeClose: true,
+                    icon: 3,
+                    title: '提示',
+                    btn: ['势在必行', '容我三思'],
+                    yes: function(index) {
+                        request.post({
+                            url: '/orderBasic/talk',
+                            data: {id: id, status: 0},
+                            callback: function (res) {
+                                layer.closeAll('loading');
+                                if (res.status !== 200) {
+                                    layer.msg(res.message, {icon: 5, anim: 6});
+                                    return false;
+                                }
+
+                                layer.close(index);
+                                layer.msg('删除成功', {
+                                    icon: 6,
+                                    time: 500,
+                                    end: function () {
+                                        $('#search-btn').trigger('click');
+                                    }
+                                });
+                            }
+                        });
+                    }
+                });
+            }
+        });
+    </script>
+</html>

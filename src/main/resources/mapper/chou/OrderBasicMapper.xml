@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gaoc.chou.mapper.OrderBasicMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.gaoc.chou.model.OrderBasic">
+        <id column="id" property="id" />
+        <result column="talk_no" property="talkNo" />
+        <result column="name" property="name" />
+        <result column="sex" property="sex" />
+        <result column="mobile" property="mobile" />
+        <result column="wechat" property="wechat" />
+        <result column="talk_time" property="talkTime" />
+        <result column="customer_state" property="customerState" />
+        <result column="treaty_type" property="treatyType" />
+        <result column="treaty_detail" property="treatyDetail" />
+        <result column="design_time" property="designTime" />
+        <result column="output_time" property="outputTime" />
+        <result column="hardcover" property="hardcover" />
+        <result column="sale_name" property="saleName" />
+        <result column="sale_no" property="saleNo" />
+        <result column="sale_area" property="saleArea" />
+        <result column="resident_num" property="residentNum" />
+        <result column="purpose" property="purpose" />
+        <result column="sale_price_min" property="salePriceMin" />
+        <result column="sale_price_max" property="salePriceMax" />
+        <result column="special_need" property="specialNeed" />
+        <result column="address" property="address" />
+        <result column="channel" property="channel" />
+        <result column="recommend" property="recommend" />
+        <result column="market_dept" property="marketDept" />
+        <result column="market_emp" property="marketEmp" />
+        <result column="market_belong" property="marketBelong" />
+        <result column="design_dept" property="designDept" />
+        <result column="design_emp" property="designEmp" />
+        <result column="design_belong" property="designBelong" />
+        <result column="manager" property="manager" />
+        <result column="remarks" property="remarks" />
+        <result column="status" property="status" />
+        <result column="create_id" property="createId" />
+        <result column="create_time" property="createTime" />
+        <result column="update_id" property="updateId" />
+        <result column="update_time" property="updateTime" />
+    </resultMap>
+
+    <update id="talk">
+        UPDATE order_basic SET `status` = #{status},
+        <if test="status == 0">
+            create_talk_time = NULL
+        </if>
+        <if test="status == 1">
+            create_talk_time = NOW()
+        </if>
+        WHERE id = #{id}
+    </update>
+
+</mapper>

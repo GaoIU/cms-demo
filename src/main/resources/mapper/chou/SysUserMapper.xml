@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gaoc.chou.mapper.SysUserMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.gaoc.chou.model.SysUser">
+        <id column="id" property="id" />
+        <result column="name" property="name" />
+        <result column="nick_name" property="nickName" />
+        <result column="sex" property="sex" />
+        <result column="job_no" property="jobNo" />
+        <result column="mobile" property="mobile" />
+        <result column="password" property="password" />
+        <result column="email" property="email" />
+        <result column="card_no" property="cardNo" />
+        <result column="bank_no" property="bankNo" />
+        <result column="bank_name" property="bankName" />
+        <result column="bank_address" property="bankAddress" />
+        <result column="bank_account_name" property="bankAccountName" />
+        <result column="dept_id" property="deptId" />
+        <result column="native_place" property="nativePlace" />
+        <result column="household" property="household" />
+        <result column="social_start_time" property="socialStartTime" />
+        <result column="social_price" property="socialPrice" />
+        <result column="housing_price" property="housingPrice" />
+        <result column="social_end_time" property="socialEndTime" />
+        <result column="education" property="education" />
+        <result column="school" property="school" />
+        <result column="major" property="major" />
+        <result column="entry_time" property="entryTime" />
+        <result column="contract_time" property="contractTime" />
+        <result column="entry_dept_id" property="entryDeptId" />
+        <result column="entry_post_id" property="entryPostId" />
+        <result column="post_id" property="postId" />
+        <result column="entry_salary" property="entrySalary" />
+        <result column="worker_salary" property="workerSalary" />
+        <result column="salary" property="salary" />
+        <result column="merits_salary" property="meritsSalary" />
+        <result column="post_salary" property="postSalary" />
+        <result column="worker_time" property="workerTime" />
+        <result column="quit_time" property="quitTime" />
+        <result column="status" property="status" />
+        <result column="is_disable" property="isDisable" />
+        <result column="create_id" property="createId" />
+        <result column="create_time" property="createTime" />
+        <result column="update_id" property="updateId" />
+        <result column="update_time" property="updateTime" />
+    </resultMap>
+
+    <select id="allUser" resultType="java.util.Map">
+        SELECT a.id, a.`name`, a.type FROM (
+        <if test="type == 1">
+            SELECT su.id, su.`name`, '0' sort, '1' type FROM sys_user su
+        </if>
+        <if test="type == 2">
+            SELECT o.id, o.`name`, '1' sort, '2' type FROM outsider o
+        </if>
+        <if test="type == null || type == 0">
+            SELECT su.id, su.`name`, '0' sort, '1' type FROM sys_user su UNION ALL SELECT o.id, o.`name`, '1' sort, '2' type FROM outsider o
+        </if>
+        ) a
+        <if test="name != null and name != ''">
+            WHERE a.`name` LIKE CONCAT('%', #{name}, '%')
+        </if>
+        ORDER BY a.sort, a.`name`
+    </select>
+
+    <update id="updateUserNullByPostIds">
+        UPDATE sys_user SET entry_post_id = NULL WHERE entry_post_id IN
+        <foreach collection="postIds" item="postId" open="(" close=")" separator=",">#{postId}</foreach>;
+
+        UPDATE sys_user SET post_id = NULL WHERE post_id IN
+        <foreach collection="postIds" item="postId" open="(" close=")" separator=",">#{postId}</foreach>;
+    </update>
+
+    <update id="updateUserNullByDeptIds">
+        UPDATE sys_user SET entry_dept_id = NULL WHERE entry_dept_id IN
+        <foreach collection="deptIds" item="deptId" open="(" close=")" separator=",">#{deptId}</foreach>;
+
+        UPDATE sys_user SET dept_id = NULL WHERE dept_id IN
+        <foreach collection="deptIds" item="deptId" open="(" close=")" separator=",">#{deptId}</foreach>;
+    </update>
+
+</mapper>

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
+    <head>
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+        <title>臭臭平台</title>
+        <link rel="icon" th:href="@{/img/cc.png}" />
+        <link rel="stylesheet" th:href="@{/layui/css/layui.css}" media="all" />
+    </head>
+
+    <body style="padding: 15px;">
+        <div class="layui-row layui-col-space10">
+            <form class="layui-form layui-form-pane">
+                <div class="layui-col-md10">
+                    <div class="layui-row layui-col-space5">
+                        <div class="layui-col-md3">
+                            <label class="layui-form-label">邀约人员</label>
+                            <div class="layui-inline">
+                                <input class="layui-input" name="name" autocomplete="off">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="layui-col-md2">
+                    <button id="search-btn" type="submit" class="layui-btn" lay-submit="" lay-filter="submit">搜索</button>
+                    <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+                </div>
+            </form>
+        </div>
+
+        <table class="layui-table" id="talkDetail" lay-filter="talkDetail" th:lay-data="'{url: \'/talkDetail/query\', where: {talkId: \'' + ${talkId} + '\'}, toolbar: \'#toolbar\', defaultToolbar: [\'filter\', \'exports\'], page: {layout: [\'count\', \'prev\', \'page\', \'next\', \'limit\', \'refresh\', \'skip\']}, limit: 10, limits: [10, 30, 50, 100, 10000], title: \'洽谈明细\', cellMinWidth: 100, text: {none: \'暂无数据\'}, request: {pageName: \'current\', limitName: \'size\'}, parseData: function(res) {const status = res.status == 200 ? 0 : res.status; return {\'code\': status, \'msg\': res.message, \'count\': res.data.total, \'data\': res.data.records}}}'">
+            <thead>
+                <tr>
+                    <th lay-data="{field: 'id', type: 'checkbox'}"></th>
+                    <th lay-data="{field: 'name', title: '邀约人员', align: 'center'}"></th>
+                    <th lay-data="{field: 'rateTime', title: '洽谈日期', align: 'center'}"></th>
+                    <th lay-data="{field: 'remarks', title: '备注', align: 'center'}"></th>
+                    <th lay-data="{field: 'createTime', title: '创建时间', align: 'center'}"></th>
+                    <th lay-data="{field: 'updateTime', title: '修改时间', align: 'center'}"></th>
+                    <th lay-data="{fixed: 'right', title: '操作', toolbar: '#toolbar-line', align: 'center'}"
+                        sec:authorize="hasAnyAuthority('TALK_DETAIL:EDIT@PUT', 'TALK_DETAIL:REMOVE@DELETE')"></th>
+                </tr>
+            </thead>
+        </table>
+    </body>
+
+    <!--[if lt IE 9]>
+    <script src="https://cdn.staticfile.org/html5shiv/r29/html5.min.js"></script>
+    <script src="https://cdn.staticfile.org/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    <script th:src="@{/layui/layui.js}"></script>
+
+    <script type="text/html" id="toolbar">
+        <div class="layui-btn-container">
+            <button class="layui-btn" lay-event="add" sec:authorize="hasAuthority('TALK_DETAIL:ADD@POST')">
+                <i class="layui-icon layui-icon-add-1"></i>新增
+            </button>
+
+            <button class="layui-btn layui-btn-danger" lay-event="dels" sec:authorize="hasAuthority('TALK_DETAIL:REMOVE@DELETE')">
+                <i class="layui-icon layui-icon-delete"></i>批量删除
+            </button>
+        </div>
+    </script>
+
+    <script type="text/html" id="toolbar-line">
+        <a class="layui-btn layui-btn-xs" lay-event="edit" sec:authorize="hasAuthority('TALK_DETAIL:EDIT@PUT')">编辑</a>
+        <a class="layui-btn layui-btn-xs layui-btn-danger" lay-event="del" sec:authorize="hasAuthority('TALK_DETAIL:REMOVE@DELETE')">删除</a>
+    </script>
+
+    <script th:inline="javascript">
+        const talkId = [[ ${talkId} ]];
+    </script>
+
+    <script>
+        layui.extend({
+            request: '/js/index/request'
+        }).use(['layer', 'table', 'form', 'jquery', 'request'], function () {
+            const table = layui.table;
+            const form = layui.form;
+            const layer = layui.layer;
+            const $ = layui.jquery;
+            const request = layui.request;
+
+            window.refresh = {
+                reloadSearch: function () {
+                    $('#search-btn').trigger('click');
+                }
+            };
+
+            form.on('submit(submit)', function (data) {
+                table.reload('talkDetail', {
+                    page: {curr: 1},
+                    where: data.field
+                });
+                return false;
+            });
+
+            table.on('toolbar(talkDetail)', function (obj) {
+                switch (obj.event) {
+                    case 'add':
+                        saveOrUpdate('', talkId, '新增洽谈明细');
+                        break;
+                    case 'dels':
+                        const checkStatus = table.checkStatus(obj.config.id);
+                        if (!checkStatus.data.length) {
+                            layer.msg('请选择要操作的数据', {anim: 6, icon: 5});
+                            break;
+                        }
+
+                        let ids = new Array();
+                        $.each(checkStatus.data, function (index, obj) {
+                            ids.push(obj.id);
+                        });
+                        del(ids);
+                        break;
+                };
+            });
+
+             table.on('tool(talkDetail)', function (obj) {
+                const data = obj.data;
+                const event = obj.event;
+
+                switch (event) {
+                    case 'edit':
+                        saveOrUpdate(data.id, talkId, '修改洽谈明细');
+                        break;
+                    case 'del':
+                        let ids = new Array(1);
+                        ids[0] = data.id;
+                        del(ids);
+                        break;
+                };
+            });
+
+            function saveOrUpdate(id, talkId, title) {
+                const anim = Math.floor(Math.random() * (6 - 0)) + 0;
+                layer.open({
+                    type: 2,
+                    content: ['/talkDetail/saveOrUpdate?id=' + id + '&talkId=' + talkId, 'auto'],
+                    icon: 0,
+                    shadeClose: true,
+                    title: title,
+                    anim: anim,
+                    maxmin: true,
+                    area: ['40%', '85%']
+                });
+            }
+
+            function del(ids) {
+                const anim = Math.floor(Math.random() * (6 - 0)) + 0;
+                layer.confirm('确认要删除？', {
+                    anim: anim,
+                    shadeClose: true,
+                    icon: 3,
+                    title: '提示',
+                    btn: ['盘它', '溜了'],
+                    yes: function(index) {
+                        request.deleteJson({
+                            url: '/talkDetail',
+                            data: ids,
+                            callback: function (res) {
+                                layer.closeAll('loading');
+                                if (res.status !== 200) {
+                                    layer.msg(res.message, {icon: 5, anim: 6});
+                                    return false;
+                                }
+
+                                layer.close(index);
+                                layer.msg('删除成功', {
+                                    icon: 6,
+                                    time: 500,
+                                    end: function () {
+                                        $('#search-btn').trigger('click');
+                                    }
+                                });
+                            }
+                        });
+                    }
+                });
+            }
+        });
+    </script>
+</html>

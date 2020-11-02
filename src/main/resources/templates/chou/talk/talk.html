@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+    <head>
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+        <title>臭臭平台</title>
+        <link rel="icon" th:href="@{/img/cc.png}" />
+        <link rel="stylesheet" th:href="@{/layui/css/layui.css}" media="all" />
+    </head>
+
+    <body style="padding: 15px;">
+        <form class="layui-form" th:object="${talkDetail}">
+            <input type="hidden" name="id" th:value="*{id}" readonly>
+            <input type="hidden" name="talkId" th:value="*{talkId}" readonly>
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">邀约人员</label>
+                <div class="layui-input-block">
+                    <input type="hidden" name="userId" th:value="*{userId}">
+                    <input type="text" id="userId" name="name" th:value="*{name}" th:ts-selected="*{userId}" lay-verify="required" readonly autocomplete="off" placeholder="请选择邀约人员" class="layui-input">
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">洽谈日期</label>
+                <div class="layui-input-block">
+                    <input type="tel" id="rateTime" name="rateTime" th:value="*{rateTime}" lay-verify="required" readonly autocomplete="off" placeholder="请选择洽谈日期" class="layui-input">
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">备注</label>
+                <div class="layui-input-block">
+                    <textarea name="remarks" th:text="*{remarks}" autocomplete="off" placeholder="请输入备注" class="layui-textarea"></textarea>
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <div class="layui-input-block">
+                    <button type="submit" class="layui-btn" lay-submit="" lay-filter="submit">提交</button>
+                    <button lay-filter="close" class="layui-btn layui-btn-primary">取消</button>
+                </div>
+            </div>
+        </form>
+    </body>
+
+    <!--[if lt IE 9]>
+    <script src="https://cdn.staticfile.org/html5shiv/r29/html5.min.js"></script>
+    <script src="https://cdn.staticfile.org/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    <script th:src="@{/layui/layui.js}"></script>
+
+    <script type="text/html" id="typeTpl">
+        {{# if (d.type == 1) { }}
+            <span class="layui-badge layui-bg-green">内部员工</span>
+        {{# } else if (d.type == 2) { }}
+            <span class="layui-badge layui-bg-blue">外部人员</span>
+        {{# } else { }}
+            <span>未知</span>
+        {{# } }}
+    </script>
+
+    <script th:inline="javascript">
+        const userId = [[ ${talkDetail.userId} ]];
+    </script>
+
+    <script>
+        layui.extend({
+            request: '/js/index/request',
+            tableSelect: '/js/tree/tableSelect'
+        }).use(['form', 'layer', 'jquery', 'request', 'laydate', 'tableSelect'], function () {
+            const form = layui.form;
+            const layer = layui.layer;
+            const $ = layui.jquery;
+            const request = layui.request;
+            const laydate = layui.laydate;
+            const tableSelect = layui.tableSelect;
+
+            laydate.render({
+                elem: '#rateTime',
+                calendar: true
+            });
+
+            const userIds = [];
+            if (userId) {
+                userIds.push(userId);
+            }
+            renderUser('userId', 'radio', 1, userIds, false);
+
+            $('button[lay-filter="close"]').on('click', function () {
+                const index = parent.layer.getFrameIndex(window.name);
+                parent.layer.close(index);
+            });
+
+            function renderUser(elem, type, where, vals, reset) {
+                let clear = false;
+                if (type === 'radio') {
+                    clear = true;
+                }
+
+                tableSelect.render({
+                    elem: '#' + elem,
+                    checkedKey: 'id',
+                    searchKey: 'name',
+                    defaultVal: vals,
+                    reset: reset,
+                    showClear: clear,
+                    searchPlaceholder: '姓名搜索，支持模糊查询',
+                    table: {
+                        cols: [
+                            [
+                                {field: 'id', type: type},
+                                {field: 'name', title: '姓名', align: 'center'},
+                                {field: 'type', title: '所属', align: 'center', templet: '#typeTpl'}
+                            ]
+                        ],
+                        url: '/orderBasic/allUser',
+                        method: 'post',
+                        where: {type: where},
+                        page: {layout: ['count', 'prev', 'page', 'next', 'limit', 'refresh', 'skip']},
+                        limit: 10,
+                        limits: [10, 30, 50, 100, 10000],
+                        title: '人员列表',
+                        cellMinWidth: 100,
+                        text: {none: '暂无数据'},
+                        request: {pageName: 'current', limitName: 'size'},
+                        parseData: function(res) {
+                            const status = res.status == 200 ? 0 : res.status;
+                            return {
+                                'code': status,
+                                'msg': res.message,
+                                'count': res.data.total,
+                                'data': res.data.records
+                            }
+                        }
+                    },
+                    done: function (el, data) {
+                        const checkData = data.data;
+                        let id = '';
+                        let name = '';
+
+                        for (let i = 0; i < checkData.length; i++) {
+                            if (i > 0) {
+                                id += ',';
+                                name += ',';
+                            }
+                            id += checkData[i].id;
+                            name += checkData[i].name;
+                        }
+
+                        el.val(name);
+                        $('input[name="' + elem + '"]').val(id);
+                    }
+                });
+            }
+
+            form.on('submit(submit)', function (data) {
+                const id = data.field.id;
+                const method = id == null || id == '' ? 'POST' : "PUT";
+                const message = id == null || id == '' ? '新增成功' : "修改成功";
+
+                request.jsonQs({
+                    url: '/talkDetail',
+                    type: method,
+                    data: data.field,
+                    callback: function (res) {
+                        layer.closeAll('loading');
+                        if (res.status !== 200) {
+                            layer.msg(res.message, {icon: 5, anim: 6});
+                            return false;
+                        }
+
+                        layer.msg(message, {
+                            icon: 6,
+                            time: 500,
+                            end: function () {
+                                const index = parent.layer.getFrameIndex(window.name);
+                                parent.layer.close(index);
+                                parent.refresh.reloadSearch();
+                            }
+                        });
+                    }
+                });
+
+                return false;
+            });
+        });
+    </script>
+</html>

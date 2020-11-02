@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
+    <head>
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+        <title>臭臭平台</title>
+        <link rel="icon" href="img/cc.png" />
+        <link rel="stylesheet" href="viewUI-4.3.2/dist/styles/iview.css" media="all" />
+        <link rel="stylesheet" href="css/vue-treeselect.min.css" media="all" />
+    </head>
+
+    <body>
+        <div id="app" style="padding: 15px">
+            <Card :padding="15" style="margin-bottom: 10px;">
+                <i-form :model="condition" @keydown.native.enter.prevent="querySearch" label-position="right" :label-width="80" autocomplete="off">
+                    <Row :gutter="35">
+                        <i-col span="6">
+                            <form-item label="员工名称">
+                                <i-input type="text" v-model="condition.name" placeholder="请输入员工名称" clearable></i-input>
+                            </form-item>
+                        </i-col>
+
+                        <i-col span="6">
+                            <form-item label="手机号码">
+                                <i-input type="tel" v-model="condition.mobile" placeholder="请输入手机号码" clearable></i-input>
+                            </form-item>
+                        </i-col>
+
+                        <i-col span="6">
+                            <form-item label="所属部门">
+                                <treeselect v-model="condition.deptId" :options="options" :normalizer="normalizer" no-options-text="呀，没有数据呢" no-results-text="暂无筛选结果" style="height: 30px" placeholder="请选择所属部门" clearable />
+                            </form-item>
+                        </i-col>
+
+                        <i-col span="6">
+                            <form-item label="员工状态">
+                                <i-select v-model="condition.status" placeholder="请选择员工状态" clearable>
+                                    <i-option value="0" label="离职"></i-option>
+                                    <i-option value="1" label="在职"></i-option>
+                                </i-select>
+                            </form-item>
+                        </i-col>
+
+                        <i-col span="24">
+                            <i-button type="primary" style="float: right;" @click="querySearch">查询</i-button>
+                        </i-col>
+                    </Row>
+                </i-form>
+            </Card>
+
+            <Card :padding="15">
+                <div style="margin-bottom: 15px;">
+                    <i-button sec:authorize="hasAuthority('SYS_USER:ADD@POST')" @click="saveOrUpdate('', '新增员工')" type="info" icon="md-add" style="margin-right: 15px;">新增</i-button>
+                </div>
+
+                <i-table border size="small" max-height="480" :columns="table.columns" :data="table.data"></i-table>
+
+                <Page :total="page.total" :current="page.current" :page-size="page.size" :page-size-opts="page.opts" style="margin-top: 15px; padding-left: 5px;"
+                      show-total show-sizer @on-change="currentChange" @on-page-size-change="sizeChange"></Page>
+            </Card>
+
+            <Modal :title="model.title" v-model="model.value" @on-ok="ok" @on-cancel="cancel" :loading="model.loading" fullscreen>
+                <i-form :model="user" ref="modalFormRef" :rules="rules" label-position="right" label-width="80" autocomplete="off" style="margin-left: 15px; margin-right: 15px;">
+                    <i-input type="hidden" v-model="user.id"></i-input>
+                    <Row :gutter="35">
+                        <Divider orientation="left" style="margin-top: 0px;">个人信息</Divider>
+
+                        <i-col span="6">
+                            <form-item label="员工工号" prop="jobNo">
+                                <i-input type="text" v-model="user.jobNo" placeholder="请输入员工工号" maxlength="16" show-word-limit></i-input>
+                            </form-item>
+                        </i-col>
+
+                        <i-col span="6">
+                            <form-item label="员工姓名" prop="name">
+                                <i-input type="text" v-model="user.name" placeholder="请输入员工姓名" maxlength="32" show-word-limit></i-input>
+                            </form-item>
+                        </i-col>
+
+                        <i-col span="6">
+                            <form-item label="英文名称" prop="nickName">
+                                <i-input type="text" v-model="user.nickName" placeholder="请输入英文名称" maxlength="64" show-word-limit></i-input>
+                            </form-item>
+                        </i-col>
+
+                        <i-col span="6">
+                            <form-item label="性别" required>
+                                <radio-group v-model="user.sex">
+                                    <Radio label="0">女</Radio>
+                                    <Radio label="1">男</Radio>
+                                </radio-group>
+                            </form-item>
+                        </i-col>
+
+                        <i-col span="6">
+                            <form-item label="手机号码" prop="mobile">
+                                <i-input type="tel" v-model="user.mobile" placeholder="请输入手机号码" maxlength="11" show-word-limit></i-input>
+                            </form-item>
+                        </i-col>
+
+                        <i-col span="6">
+                            <form-item label="邮箱" prop="email">
+                                <i-input type="email" v-model="user.email" placeholder="请输入邮箱" maxlength="32" show-word-limit></i-input>
+                            </form-item>
+                        </i-col>
+
+                        <i-col span="6">
+                            <form-item label="身份证号" prop="cardNo">
+                                <i-input type="text" v-model="user.cardNo" placeholder="请输入身份证号" maxlength="18" show-word-limit></i-input>
+                            </form-item>
+                        </i-col>
+
+                        <i-col span="6">
+                            <form-item label="籍贯" prop="nativePlace">
+                                <i-input type="text" v-model="user.nativePlace" placeholder="请输入籍贯" maxlength="64" show-word-limit></i-input>
+                            </form-item>
+                        </i-col>
+
+                        <i-col span="6">
+                            <form-item label="户别" prop="household">
+                                <i-select v-model="user.household" placeholder="请选择户别" clearable>
+                                    <i-option value="居民" label="居民"></i-option>
+                                    <i-option value="农业" label="农业"></i-option>
+                                    <i-option value="集体" label="集体"></i-option>
+                                </i-select>
+                            </form-item>
+                        </i-col>
+
+                        <Divider orientation="left">学历信息</Divider>
+
+                        <i-col span="6">
+                            <form-item label="毕业学校" prop="school">
+                                <i-input type="text" v-model="user.school" placeholder="请输入毕业学校" maxlength="64" show-word-limit></i-input>
+                            </form-item>
+                        </i-col>
+
+                        <i-col span="6">
+                            <form-item label="学历" prop="education">
+                                <i-select v-model="user.education" placeholder="请选择学历" clearable>
+                                    <i-option value="小学" label="小学"></i-option>
+                                    <i-option value="初中" label="初中"></i-option>
+                                    <i-option value="中专" label="中专"></i-option>
+                                    <i-option value="高中" label="高中"></i-option>
+                                    <i-option value="大专" label="大专"></i-option>
+                                    <i-option value="本科" label="本科"></i-option>
+                                    <i-option value="研究生" label="研究生"></i-option>
+                                    <i-option value="博士" label="博士"></i-option>
+                                </i-select>
+                            </form-item>
+                        </i-col>
+
+                        <i-col span="6">
+                            <form-item label="专业" prop="major">
+                                <i-input type="text" v-model="user.major" placeholder="请输入专业" maxlength="32" show-word-limit></i-input>
+                            </form-item>
+                        </i-col>
+
+                        <Divider orientation="left">入职信息</Divider>
+
+                        <i-col span="6">
+                            <form-item label="入职部门" prop="entryDeptId">
+                                <treeselect v-model="user.entryDeptId" @input="changeEntryPost" :options="options" :normalizer="normalizer" default-expand-level="Infinity" no-options-text="呀，没有数据呢" no-results-text="暂无筛选结果" style="height: 30px" placeholder="请选择入职部门" clearable />
+                            </form-item>
+                        </i-col>
+
+                        <i-col span="6">
+                            <form-item label="入职岗位" prop="entryPostId">
+                                <i-select v-model="user.entryPostId" placeholder="请选择入职岗位" clearable>
+                                    <i-option v-for="item in entryPosts" :value="item.id" :label="item.name"></i-option>
+                                </i-select>
+                            </form-item>
+                        </i-col>
+
+                        <i-col span="6">
+                            <form-item label="现任部门" prop="deptId">
+                                <treeselect v-model="user.deptId" @input="changePost" :options="options" :normalizer="normalizer" default-expand-level="Infinity" no-options-text="呀，没有数据呢" no-results-text="暂无筛选结果" style="height: 30px" placeholder="请选择现任部门" clearable />
+                            </form-item>
+                        </i-col>
+
+                        <i-col span="6">
+                            <form-item label="现任岗位" prop="postId">
+                                <i-select v-model="user.postId" placeholder="请选择现任岗位" clearable>
+                                    <i-option v-for="item in posts" :value="item.id" :label="item.name"></i-option>
+                                </i-select>
+                            </form-item>
+                        </i-col>
+
+                        <i-col span="6">
+                            <form-item label="入职日期" prop="entryTime">
+                                <date-picker v-model="user.entryTime" type="date" placeholder="请选择入职日期" format="yyyy-MM-dd" :editable="false" show-week-numbers clearable></date-picker>
+                            </form-item>
+                        </i-col>
+
+                        <i-col span="6">
+                            <form-item label="合同日期" prop="contractTime">
+                                <date-picker v-model="user.contractTime" type="date" placeholder="请选择合同日期" format="yyyy-MM-dd" :editable="false" show-week-numbers clearable></date-picker>
+                            </form-item>
+                        </i-col>
+
+                        <i-col span="6">
+                            <form-item label="转正日期" prop="workerTime">
+                                <date-picker v-model="user.workerTime" type="date" placeholder="请选择转正日期" format="yyyy-MM-dd" :editable="false" show-week-numbers clearable></date-picker>
+                            </form-item>
+                        </i-col>
+
+                        <i-col span="6">
+                            <form-item label="离职日期" prop="quitTime">
+                                <date-picker v-model="user.quitTime" type="date" placeholder="请选择离职日期" format="yyyy-MM-dd" :editable="false" show-week-numbers clearable></date-picker>
+                            </form-item>
+                        </i-col>
+
+                        <i-col span="6">
+                            <form-item label="员工状态" required>
+                                <radio-group v-model="user.status">
+                                    <Radio label="0">离职</Radio>
+                                    <Radio label="1">在职</Radio>
+                                </radio-group>
+                            </form-item>
+                        </i-col>
+
+                        <Divider orientation="left">工资信息</Divider>
+
+                        <i-col span="6">
+                            <form-item label="入职薪资" prop="entrySalary">
+                                <input-number :min="0" v-model="user.entrySalary" placeholder="请输入入职薪资" style="width: 100%;"></input-number>
+                            </form-item>
+                        </i-col>
+
+                        <i-col span="6">
+                            <form-item label="转正薪资" prop="workerSalary">
+                                <input-number :min="0" v-model="user.workerSalary" placeholder="请输入转正薪资" style="width: 100%;"></input-number>
+                            </form-item>
+                        </i-col>
+
+                        <i-col span="6">
+                            <form-item label="实时薪资" prop="salary">
+                                <input-number :min="0" v-model="user.salary" placeholder="请输入实时薪资" style="width: 100%;"></input-number>
+                            </form-item>
+                        </i-col>
+
+                        <i-col span="6">
+                            <form-item label="绩效薪资" prop="meritsSalary">
+                                <input-number :min="0" v-model="user.meritsSalary" placeholder="请输入绩效薪资" style="width: 100%;"></input-number>
+                            </form-item>
+                        </i-col>
+
+                        <i-col span="6">
+                            <form-item label="岗位薪资" prop="postSalary">
+                                <input-number :min="0" v-model="user.postSalary" placeholder="请输入岗位薪资" style="width: 100%;"></input-number>
+                            </form-item>
+                        </i-col>
+
+                        <i-col span="6">
+                            <form-item label="银行卡号" prop="bankNo">
+                                <i-input type="text" v-model="user.bankNo" placeholder="请输入银行卡号" maxlength="19" show-word-limit></i-input>
+                            </form-item>
+                        </i-col>
+
+                        <i-col span="6">
+                            <form-item label="开户行名称" prop="bankAccountName" label-width="95">
+                                <i-input type="text" v-model="user.bankAccountName" placeholder="请输入开户行名称" maxlength="64" show-word-limit></i-input>
+                            </form-item>
+                        </i-col>
+
+                        <i-col span="6">
+                            <form-item label="银行名称" prop="bankName">
+                                <i-input type="text" v-model="user.bankName" placeholder="请输入银行名称" maxlength="32" show-word-limit></i-input>
+                            </form-item>
+                        </i-col>
+
+                        <i-col span="6">
+                            <form-item label="办理地" prop="bankAddress">
+                                <i-input type="text" v-model="user.bankAddress" placeholder="请输入办理地" maxlength="64" show-word-limit></i-input>
+                            </form-item>
+                        </i-col>
+
+                        <Divider orientation="left">五险一金信息</Divider>
+
+                        <i-col span="6">
+                            <form-item label="社保缴纳缴费基数" prop="socialPrice" label-width="135">
+                                <input-number :min="0" v-model="user.socialPrice" placeholder="请输入社保缴纳缴费基数" style="width: 100%;"></input-number>
+                            </form-item>
+                        </i-col>
+
+                        <i-col span="6">
+                            <form-item label="公积金基数" prop="housingPrice" label-width="95">
+                                <input-number :min="0" v-model="user.housingPrice" placeholder="请输入公积金基数" style="width: 100%;"></input-number>
+                            </form-item>
+                        </i-col>
+
+                        <i-col span="6">
+                            <form-item label="社保缴纳起始月份" prop="socialStartTime" label-width="135">
+                                <date-picker v-model="user.socialStartTime" type="month" placeholder="请选择社保缴纳起始月份" format="yyyy-MM" :editable="false" show-week-numbers clearable></date-picker>
+                            </form-item>
+                        </i-col>
+
+                        <i-col span="6">
+                            <form-item label="社保缴纳最后月份" prop="socialEndTime" label-width="125">
+                                <date-picker v-model="user.socialEndTime" type="month" placeholder="请选择社保缴纳最后月份" format="yyyy-MM" :editable="false" show-week-numbers clearable></date-picker>
+                            </form-item>
+                        </i-col>
+                    </Row>
+                </i-form>
+            </Modal>
+
+            <Modal :title="roleModal.title" v-model="roleModal.value" @on-ok="roleOk" @on-cancel="roleCancel" :loading="roleModal.loading">
+                <i-form :model="userRole" ref="roleForm" :rules="roleRules" label-position="right" label-width="80" autocomplete="off">
+                    <i-input type="hidden" v-model="userRole.sysUserId"></i-input>
+                    <form-item label="授权角色" prop="sysRoleIds">
+                        <checkbox-group v-model="userRole.sysRoleIds">
+                            <Checkbox v-for="item in roles" :label="item.id">{{ item.name }}</Checkbox>
+                        </checkbox-group>
+                    </form-item>
+                </i-form>
+            </Modal>
+        </div>
+    </body>
+
+    <!--[if lt IE 9]>
+    <script src="https://cdn.staticfile.org/html5shiv/r29/html5.min.js"></script>
+    <script src="https://cdn.staticfile.org/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    <script type="text/javascript" src="js/base/vue.min.js"></script>
+    <script type="text/javascript" src="viewUI-4.3.2/dist/iview.min.js"></script>
+    <script type="text/javascript" src="js/base/jquery-3.5.1.min.js"></script>
+    <script type="text/javascript" src="js/base/lodash.min.js"></script>
+    <script type="text/javascript" src="js/base/moment.min.js"></script>
+    <script type="text/javascript" src="js/base/vue-treeselect.umd.min.js"></script>
+    <script type="text/javascript" src="js/base/http.js"></script>
+
+    <script>
+        Vue.component('treeselect', VueTreeselect.Treeselect);
+
+        const app = new Vue({
+            el: '#app',
+            data: {
+                condition: {
+                    name: '',
+                    mobile: '',
+                    deptId: null,
+                    status: ''
+                },
+                options: [],
+                normalizer: function(node) {
+                    return {
+                        id: node.id,
+                        label: node.name,
+                        children: node.children
+                    };
+                },
+                page: {
+                    current: 1,
+                    size: 10,
+                    total: 0,
+                    opts: [10, 30, 50, 100]
+                },
+                table: {
+                    columns: [
+                        {
+                            type: 'expand',
+                            width: 50,
+                            render: function(h, param) {
+                                const cols = [];
+                                cols.push(h('Col', {
+                                    props: {span: 6},
+                                    style: {height: '35px'}
+                                }, [
+                                    h('span', {
+                                        style: {
+                                            fontSize: '12px',
+                                            fontWeight: 'bold'
+                                        }
+                                    }, '入职部门：'),
+                                    h('span', param.row.entryDeptName)
+                                ]));
+
+                                cols.push(h('Col', {
+                                    props: {span: 6},
+                                    style: {height: '35px'}
+                                }, [
+                                    h('span', {
+                                        style: {
+                                            fontSize: '12px',
+                                            fontWeight: 'bold'
+                                        }
+                                    }, '入职岗位：'),
+                                    h('span', param.row.entryPostName)
+                                ]));
+
+                                cols.push(h('Col', {
+                                    props: {span: 6},
+                                    style: {height: '35px'}
+                                }, [
+                                    h('span', {
+                                        style: {
+                                            fontSize: '12px',
+                                            fontWeight: 'bold'
+                                        }
+                                    }, '现任部门：'),
+                                    h('span', param.row.deptName)
+                                ]));
+
+                                cols.push(h('Col', {
+                                    props: {span: 6},
+                                    style: {height: '35px'}
+                                }, [
+                                    h('span', {
+                                        style: {
+                                            fontSize: '12px',
+                                            fontWeight: 'bold'
+                                        }
+                                    }, '现任岗位：'),
+                                    h('span', param.row.postName)
+                                ]));
+
+                                cols.push(h('Col', {
+                                    props: {span: 6},
+                                    style: {height: '35px'}
+                                }, [
+                                    h('span', {
+                                        style: {
+                                            fontSize: '12px',
+                                            fontWeight: 'bold'
+                                        }
+                                    }, '入职日期：'),
+                                    h('span', param.row.entryTime)
+                                ]));
+
+                                cols.push(h('Col', {
+                                    props: {span: 6},
+                                    style: {height: '35px'}
+                                }, [
+                                    h('span', {
+                                        style: {
+                                            fontSize: '12px',
+                                            fontWeight: 'bold'
+                                        }
+                                    }, '转正日期：'),
+                                    h('span', param.row.workerTime)
+                                ]));
+
+                                cols.push(h('Col', {
+                                    props: {span: 6},
+                                    style: {height: '35px'}
+                                }, [
+                                    h('span', {
+                                        style: {
+                                            fontSize: '12px',
+                                            fontWeight: 'bold'
+                                        }
+                                    }, '合同日期：'),
+                                    h('span', param.row.contractTime)
+                                ]));
+
+                                cols.push(h('Col', {
+                                    props: {span: 6},
+                                    style: {height: '35px'}
+                                }, [
+                                    h('span', {
+                                        style: {
+                                            fontSize: '12px',
+                                            fontWeight: 'bold'
+                                        }
+                                    }, '入职薪资：'),
+                                    h('span', param.row.entrySalary)
+                                ]));
+
+                                cols.push(h('Col', {
+                                    props: {span: 6},
+                                    style: {height: '35px'}
+                                }, [
+                                    h('span', {
+                                        style: {
+                                            fontSize: '12px',
+                                            fontWeight: 'bold'
+                                        }
+                                    }, '转正薪资：'),
+                                    h('span', param.row.workerSalary)
+                                ]));
+
+                                cols.push(h('Col', {
+                                    props: {span: 6},
+                                    style: {height: '35px'}
+                                }, [
+                                    h('span', {
+                                        style: {
+                                            fontSize: '12px',
+                                            fontWeight: 'bold'
+                                        }
+                                    }, '实时薪资：'),
+                                    h('span', param.row.salary)
+                                ]));
+
+                                cols.push(h('Col', {
+                                    props: {span: 6},
+                                    style: {height: '35px'}
+                                }, [
+                                    h('span', {
+                                        style: {
+                                            fontSize: '12px',
+                                            fontWeight: 'bold'
+                                        }
+                                    }, '绩效薪资：'),
+                                    h('span', param.row.meritsSalary)
+                                ]));
+
+                                cols.push(h('Col', {
+                                    props: {span: 6},
+                                    style: {height: '35px'}
+                                }, [
+                                    h('span', {
+                                        style: {
+                                            fontSize: '12px',
+                                            fontWeight: 'bold'
+                                        }
+                                    }, '岗位薪资：'),
+                                    h('span', param.row.postSalary)
+                                ]));
+
+                                cols.push(h('Col', {
+                                    props: {span: 6},
+                                    style: {height: '35px'}
+                                }, [
+                                    h('span', {
+                                        style: {
+                                            fontSize: '12px',
+                                            fontWeight: 'bold'
+                                        }
+                                    }, '身份证号码：'),
+                                    h('span', param.row.cardNo)
+                                ]));
+
+                                cols.push(h('Col', {
+                                    props: {span: 6},
+                                    style: {height: '35px'}
+                                }, [
+                                    h('span', {
+                                        style: {
+                                            fontSize: '12px',
+                                            fontWeight: 'bold'
+                                        }
+                                    }, '银行卡号：'),
+                                    h('span', param.row.bankNo)
+                                ]));
+
+                                cols.push(h('Col', {
+                                    props: {span: 6},
+                                    style: {height: '35px'}
+                                }, [
+                                    h('span', {
+                                        style: {
+                                            fontSize: '12px',
+                                            fontWeight: 'bold'
+                                        }
+                                    }, '银行名称：'),
+                                    h('span', param.row.bankName)
+                                ]));
+
+                                cols.push(h('Col', {
+                                    props: {span: 6},
+                                    style: {height: '35px'}
+                                }, [
+                                    h('span', {
+                                        style: {
+                                            fontSize: '12px',
+                                            fontWeight: 'bold'
+                                        }
+                                    }, '办理地：'),
+                                    h('span', param.row.bankAddress)
+                                ]));
+
+                                cols.push(h('Col', {
+                                    props: {span: 6},
+                                    style: {height: '35px'}
+                                }, [
+                                    h('span', {
+                                        style: {
+                                            fontSize: '12px',
+                                            fontWeight: 'bold'
+                                        }
+                                    }, '开户行名称：'),
+                                    h('span', param.row.bankAccountName)
+                                ]));
+
+                                cols.push(h('Col', {
+                                    props: {span: 6},
+                                    style: {height: '35px'}
+                                }, [
+                                    h('span', {
+                                        style: {
+                                            fontSize: '12px',
+                                            fontWeight: 'bold'
+                                        }
+                                    }, '籍贯：'),
+                                    h('span', param.row.nativePlace)
+                                ]));
+
+                                cols.push(h('Col', {
+                                    props: {span: 6},
+                                    style: {height: '35px'},
+                                    style: {height: '35px'}
+                                }, [
+                                    h('span', {
+                                        style: {
+                                            fontSize: '12px',
+                                            fontWeight: 'bold'
+                                        }
+                                    }, '户别：'),
+                                    h('span', param.row.household)
+                                ]));
+
+                                cols.push(h('Col', {
+                                    props: {span: 6},
+                                    style: {height: '35px'}
+                                }, [
+                                    h('span', {
+                                        style: {
+                                            fontSize: '12px',
+                                            fontWeight: 'bold'
+                                        }
+                                    }, '社保缴纳起始月份：'),
+                                    h('span', param.row.socialStartTime)
+                                ]));
+
+                                cols.push(h('Col', {
+                                    props: {span: 6},
+                                    style: {height: '35px'}
+                                }, [
+                                    h('span', {
+                                        style: {
+                                            fontSize: '12px',
+                                            fontWeight: 'bold'
+                                        }
+                                    }, '社保缴纳缴费基数：'),
+                                    h('span', param.row.socialPrice)
+                                ]));
+
+                                cols.push(h('Col', {
+                                    props: {span: 6},
+                                    style: {height: '35px'}
+                                }, [
+                                    h('span', {
+                                        style: {
+                                            fontSize: '12px',
+                                            fontWeight: 'bold'
+                                        }
+                                    }, '公积金基数：'),
+                                    h('span', param.row.housingPrice)
+                                ]));
+
+                                cols.push(h('Col', {
+                                    props: {span: 6},
+                                    style: {height: '35px'}
+                                }, [
+                                    h('span', {
+                                        style: {
+                                            fontSize: '12px',
+                                            fontWeight: 'bold'
+                                        }
+                                    }, '社保缴纳最后月份：'),
+                                    h('span', param.row.socialEndTime)
+                                ]));
+
+                                cols.push(h('Col', {
+                                    props: {span: 6},
+                                    style: {height: '35px'}
+                                }, [
+                                    h('span', {
+                                        style: {
+                                            fontSize: '12px',
+                                            fontWeight: 'bold'
+                                        }
+                                    }, '学历：'),
+                                    h('span', param.row.education)
+                                ]));
+
+                                cols.push(h('Col', {
+                                    props: {span: 6},
+                                    style: {height: '35px'}
+                                }, [
+                                    h('span', {
+                                        style: {
+                                            fontSize: '12px',
+                                            fontWeight: 'bold'
+                                        }
+                                    }, '毕业学校：'),
+                                    h('span', param.row.school)
+                                ]));
+
+                                cols.push(h('Col', {
+                                    props: {span: 6},
+                                    style: {height: '35px'}
+                                }, [
+                                    h('span', {
+                                        style: {
+                                            fontSize: '12px',
+                                            fontWeight: 'bold'
+                                        }
+                                    }, '专业：'),
+                                    h('span', param.row.major)
+                                ]));
+
+                                cols.push(h('Col', {
+                                    props: {span: 6},
+                                    style: {height: '35px'}
+                                }, [
+                                    h('span', {
+                                        style: {
+                                            fontSize: '12px',
+                                            fontWeight: 'bold'
+                                        }
+                                    }, '离职日期：'),
+                                    h('span', param.row.quitTime)
+                                ]));
+
+                                const row = h('Row', {
+                                    props: {gutter: 35}
+                                }, cols);
+                                return h('div', [row]);
+                            }
+                        },
+                        {
+                            title: '工号',
+                            key: 'jobNo'
+                        },
+                        {
+                            title: '姓名',
+                            key: 'name'
+                        },
+                        {
+                            title: '英文姓名',
+                            key: 'nickName'
+                        },
+                        {
+                            title: '性别',
+                            key: 'sex',
+                            render: function(h, param) {
+                                if (param.row.sex === 0) {
+                                    return h('Icon', {
+                                        props: {type: 'md-female'},
+                                        style: {color: 'magenta'}
+                                    });
+                                } else if (param.row.sex === 1) {
+                                    return h('Icon', {
+                                        props: {type: 'md-male'},
+                                        style: {color: 'blue'}
+                                    });
+                                } else {
+                                    return h('Tag', {
+                                        props: {
+                                            color: 'error',
+                                            type: 'dot'
+                                        }
+                                    }, '未知');
+                                }
+                            }
+                        },
+                        {
+                            title: '手机号码',
+                            key: 'mobile'
+                        },
+                        {
+                            title: '邮箱',
+                            key: 'email'
+                        },
+                        {
+                            title: '员工状态',
+                            key: 'status',
+                            render: (h, param) => {
+                                let color;
+                                let text;
+                                if (param.row.status === 0) {
+                                    color = 'error';
+                                    text = '离职';
+                                } else if (param.row.status === 1) {
+                                    color = 'success';
+                                    text = '在职'
+                                } else {
+                                    color = 'warning';
+                                    text = '离职';
+                                }
+
+                                return h('Tag', {
+                                    props: {
+                                        color: color,
+                                        type: 'dot'
+                                    }
+                                }, text);
+                            }
+                        }
+                    ],
+                    data: []
+                },
+                model: {
+                    value: false,
+                    loading: true,
+                    title: ''
+                },
+                roleModal: {
+                    value: false,
+                    loading: true,
+                    title: '员工授权'
+                },
+                temp: '',
+                user: {
+                    id: '',
+                    name: '',
+                    nickName: '',
+                    sex: '0',
+                    jobNo: '',
+                    mobile: '',
+                    email: '',
+                    cardNo: '',
+                    bankNo: '',
+                    bankName: '',
+                    bankAddress: '',
+                    bankAccountName: '',
+                    deptId: null,
+                    nativePlace: '',
+                    household: '',
+                    socialStartTime: '',
+                    socialPrice: '',
+                    housingPrice: '',
+                    socialEndTime: '',
+                    education: '',
+                    school: '',
+                    major: '',
+                    entryTime: '',
+                    contractTime: '',
+                    entryDeptId: null,
+                    entryPostId: '',
+                    postId: '',
+                    entrySalary: '',
+                    workerSalary: '',
+                    salary: '',
+                    meritsSalary: '',
+                    postSalary: '',
+                    workerTime: '',
+                    quitTime: '',
+                    status: '1'
+                },
+                entryPosts: [],
+                posts: [],
+                changeEntryDeptId: '',
+                changeDeptId: '',
+                changeEntryPostId: '',
+                changePostId: '',
+                rules: {
+                    jobNo: [
+                        {required: true, message: '员工工号不能为空', trigger: 'blur'}
+                    ],
+                    name: [
+                        {required: true, message: '员工姓名不能为空', trigger: 'blur'}
+                    ],
+                    nickName: [
+                        {required: true, message: '英文名称不能为空', trigger: 'blur'}
+                    ],
+                    mobile: [
+                        {required: true, message: '手机号码不能为空', trigger: 'blur'},
+                        {pattern: /0?(13|14|15|18|17|19)[0-9]{9}/, message: '手机号码不合法', trigger: 'blur'}
+                    ],
+                    email: [
+                        {required: true, message: '邮箱不能为空', trigger: 'blur'},
+                        {type: 'email', message: '邮箱不合法', trigger: 'blur'}
+                    ],
+                    cardNo: [
+                        {required: true, message: '身份证号不能为空', trigger: 'blur'},
+                        {pattern: /^[1-9]\d{5}(18|19|20|(3\d))\d{2}((0[1-9])|(1[0-2]))(([0-2][1-9])|10|20|30|31)\d{3}[0-9Xx]$/, message: '身份证号不合法', trigger: 'blur'}
+                    ],
+                    nativePlace: [
+                        {required: true, message: '籍贯不能为空', trigger: 'blur'}
+                    ],
+                    household: [
+                        {required: true, message: '户别不能为空', trigger: 'change'}
+                    ],
+                    entryDeptId: [
+                        {required: true, message: '请选择入职部门', trigger: 'change'}
+                    ],
+                    entryPostId: [
+                        {required: true, message: '请选择入职岗位', trigger: 'change'}
+                    ],
+                    deptId: [
+                        {required: true, message: '请选择现任部门', trigger: 'change'}
+                    ],
+                    postId: [
+                        {required: true, message: '请选择现任岗位', trigger: 'change'}
+                    ],
+                    entryTime: [
+                        {required: true, type: 'date', message: '请选择入职日期', trigger: 'change'}
+                    ],
+                    contractTime: [
+                        {required: true, type: 'date', message: '请选择合同日期', trigger: 'change'}
+                    ],
+                    entrySalary: [
+                        {required: true, type: 'number', message: '入职薪资不能为空', trigger: 'blur'}
+                    ],
+                    workerSalary: [
+                        {required: true, type: 'number', message: '转正薪资不能为空', trigger: 'blur'}
+                    ],
+                    salary: [
+                        {required: true, type: 'number', message: '实时薪资不能为空', trigger: 'blur'}
+                    ],
+                    meritsSalary: [
+                        {required: true, type: 'number', message: '绩效薪资不能为空', trigger: 'blur'}
+                    ],
+                    postSalary: [
+                        {required: true, type: 'number', message: '岗位薪资不能为空', trigger: 'blur'}
+                    ],
+                    bankNo: [
+                        {required: true, message: '银行卡号不能为空', trigger: 'blur'},
+                        {pattern: /^[\d]{19}$/, message: '银行账号必须19位数字，且不能出现空格', trigger: 'blur'}
+                    ],
+                    bankAccountName: [
+                        {required: true, message: '开户行名称不能为空', trigger: 'blur'}
+                    ],
+                    bankName: [
+                        {required: true, message: '银行名称不能为空', trigger: 'blur'}
+                    ],
+                    bankAddress: [
+                        {required: true, message: '办理地不能为空', trigger: 'blur'}
+                    ],
+                    socialPrice: [
+                        {required: true, type: 'number', message: '社保缴纳基数不能为空', trigger: 'blur'}
+                    ],
+                    housingPrice: [
+                        {required: true, type: 'number', message: '公积金基数不能为空', trigger: 'blur'}
+                    ],
+                    socialStartTime: [
+                        {required: true, type: 'date', message: '请选择社保缴纳起始月份', trigger: 'change'}
+                    ]
+                },
+                roles: [],
+                userRole: {
+                    sysUserId: '',
+                    sysRoleIds: []
+                },
+                roleRules: {
+                    sysRoleIds: [
+                        {required: true, type: 'array', message: '请至少选择一个角色进行授权', trigger: 'change'}
+                    ]
+                }
+            },
+            created: function() {
+                // 初始化权限按钮
+                this.initBtn();
+                // 初始化表格数据
+                this.querySearch();
+                // 初始化部门树下来框
+                this.deptTree();
+                // 初始化表单初始数据
+                this.temp = this.user;
+            },
+            methods: {
+                initBtn: function() {
+                    const roles = JSON.parse(window.localStorage.getItem('ROLE_CODE'));
+                    const edit = $.inArray('SYS_USER:EDIT@PUT', roles);
+                    const auth = $.inArray('SYS_USER:AUTH@POST', roles);
+                    const pwd = $.inArray('SYS_USER:PWD@POST', roles);
+                    const enable = $.inArray('SYS_USER:ENABLE@POST', roles);
+                    if (edit >= 0 || auth >= 0 || pwd >= 0 || enable >= 0) {
+                        const action = {
+                            title: '操作',
+                            width: 380,
+                            key: 'action',
+                            render: (h, param) => {
+                                const buttons = [];
+                                if (edit >= 0) {
+                                    buttons.push(h('Button', {
+                                        props: {
+                                            type: 'primary',
+                                            size: 'small',
+                                            icon: 'md-create'
+                                        },
+                                        style: {
+                                            marginRight: '10px'
+                                        },
+                                        on: {
+                                            click: () => {
+                                                this.saveOrUpdate(param.row, '编辑员工信息');
+                                            }
+                                        }
+                                    }, '编辑'));
+                                }
+
+                                if (auth >= 0) {
+                                    buttons.push(h('Button', {
+                                        props: {
+                                            type: 'success',
+                                            size: 'small',
+                                            icon: 'md-construct'
+                                        },
+                                        style: {
+                                            marginRight: '10px'
+                                        },
+                                        on: {
+                                            click: () => {
+                                                this.auth(param.row.id);
+                                            }
+                                        }
+                                    }, '授权'));
+                                }
+
+                                if (pwd >= 0) {
+                                    buttons.push(h('Button', {
+                                        props: {
+                                            type: 'warning',
+                                            size: 'small',
+                                            icon: 'md-key'
+                                        },
+                                        style: {
+                                            marginRight: '10px'
+                                        },
+                                        on: {
+                                            click: () => {
+                                                this.resetPwd(param.row.id);
+                                            }
+                                        }
+                                    }, '重置密码'));
+                                }
+
+                                if (enable >= 0) {
+                                    const props = {size: 'small'};
+                                    let text;
+                                    if (param.row.isDisable === 0) {
+                                        props['type'] = 'error';
+                                        props['icon'] = 'md-close-circle';
+                                        text = '禁用';
+                                    } else {
+                                        props['type'] = 'info';
+                                        props['icon'] = 'md-checkmark-circle';
+                                        text = '启用';
+                                    }
+                                    buttons.push(h('Button', {
+                                        props: props,
+                                        style: {
+                                            marginRight: '10px'
+                                        },
+                                        on: {
+                                            click: () => {
+                                                const val = param.row.isDisable ? 0 : 1;
+                                                this.enableUser(param.row.id, val);
+                                            }
+                                        }
+                                    }, text));
+                                }
+
+                                return h('div', buttons);
+                            }
+                        };
+
+                        this.table.columns.push(action);
+                    }
+                },
+                currentChange: function(current) {
+                    this.page.current = current;
+                    this.querySearch();
+                },
+                sizeChange: function(size) {
+                    this.page.size = size;
+                    this.querySearch();
+                },
+                querySearch: function() {
+                    this.condition['current'] = this.page.current;
+                    this.condition['size'] = this.page.size;
+                    http.get({
+                        url: '/sysUser/query',
+                        data: this.condition,
+                        vue: this,
+                        callback: function (res) {
+                            app.page.current = res.data.current;
+                            app.page.size = res.data.size;
+                            app.page.total = res.data.total;
+                            app.table.data = res.data.records;
+                        }
+                    });
+                },
+                deptTree: function() {
+                    http.post({
+                        url: '/sysUser/dept/tree',
+                        vue: this,
+                        callback: function (res) {
+                            app.options = res.data;
+                        }
+                    });
+                },
+                postSel: function(deptId, type) {
+                    http.post({
+                        url: '/sysUser/post',
+                        data: {deptId: deptId},
+                        vue: this,
+                        async: false,
+                        callback: function(res) {
+                            if (type) {
+                                app.posts = res.data;
+                            } else {
+                                app.entryPosts = res.data;
+                            }
+                        }
+                    });
+                },
+                saveOrUpdate: function(data, title) {
+                    this.model.title = title;
+                    if (data) {
+                        this.user = _.cloneDeep(data);
+                        this.user.sex = this.user.sex + '';
+                        this.user.status = this.user.status + '';
+
+                        this.changeEntryDeptId = _.cloneDeep(this.user.entryDeptId);
+                        this.changeEntryPostId = _.cloneDeep(this.user.entryPostId);
+                        this.postSel(this.user.entryDeptId, 0);
+
+                        this.changeDeptId = _.cloneDeep(this.user.deptId);
+                        this.changePostId = _.cloneDeep(this.user.postId);
+                        this.postSel(this.user.deptId, 1);
+                    } else {
+                        this.changeEntryDeptId = '';
+                        this.changeDeptId = '';
+                        this.changeEntryPostId = '';
+                        this.changePostId = '';
+                        this.user = _.cloneDeep(this.temp);
+                    }
+
+                    this.model.value = true;
+                },
+                changeEntryPost: function(value, instanceId) {
+                    if (value) {
+                        if (value === this.changeEntryDeptId) {
+                            this.user.entryPostId = this.changeEntryPostId;
+                        }
+                        this.postSel(value, 0);
+                    } else {
+                        this.user.entryPostId = '';
+                        this.entryPosts = [];
+                    }
+                },
+                changePost: function(value, instanceId) {
+                    if (value) {
+                        if (value === this.changeDeptId) {
+                            this.user.postId = this.changePostId;
+                        }
+                        this.postSel(value, 1);
+                    } else {
+                        this.user.postId = '';
+                        this.posts = [];
+                    }
+                },
+                ok: function() {
+                    this.$refs['modalFormRef'].validate((valid) => {
+                        if (valid) {
+                            if (this.user.status == 0 && !this.user.quitTime) {
+                                this.$Message.error('请选择离职日期');
+                                this.model.loading = false;
+                                this.$nextTick(() => {
+                                    this.model.loading = true;
+                                });
+                                return false;
+                            }
+                            if (this.user.quitTime && this.user.quitTime < this.user.workerTime) {
+                                this.$Message.error('离职日期不能小于转正日期');
+                                this.model.loading = false;
+                                this.$nextTick(() => {
+                                    this.model.loading = true;
+                                });
+                                return false;
+                            }
+                            if (this.user.status == 0 && !this.user.socialEndTime) {
+                                this.$Message.error('请选择社保缴纳最后月份');
+                                this.model.loading = false;
+                                this.$nextTick(() => {
+                                    this.model.loading = true;
+                                });
+                                return false;
+                            }
+                            if (this.user.socialEndTime && this.user.socialEndTime < this.user.socialStartTime) {
+                                this.$Message.error('社保缴纳最后月份不能小于社保缴纳起始月份');
+                                this.model.loading = false;
+                                this.$nextTick(() => {
+                                    this.model.loading = true;
+                                });
+                                return false;
+                            }
+
+                            const dateFormat = 'YYYY-MM-DD';
+                            const monthFormat = 'YYYY-MM';
+                            this.user.entryTime = moment(this.user.entryTime).format(dateFormat);
+                            this.user.contractTime = moment(this.user.contractTime).format(dateFormat);
+                            this.user.workerTime = moment(this.user.workerTime).format(dateFormat);
+                            if (this.user.quitTime) {
+                                this.user.quitTime = moment(this.user.quitTime).format(dateFormat);
+                            }
+                            this.user.socialStartTime = moment(this.user.socialStartTime).format(monthFormat);
+                            if (this.user.socialEndTime) {
+                                this.user.socialEndTime = moment(this.user.socialEndTime).format(monthFormat);
+                            }
+
+                            const method = this.user.id ? 'PUT' : 'POST';
+                            const message = this.user.id ? '编辑成功' : '新增成功';
+                            http.jsonQs({
+                                url: '/sysUser',
+                                type: method,
+                                data: this.user,
+                                vue: this,
+                                fail: function() {
+                                    app.model.loading = false;
+                                    app.$nextTick(() => {
+                                        app.model.loading = true;
+                                    });
+                                },
+                                callback: function(res) {
+                                    app.$Message.success(message);
+                                    app.$refs['modalFormRef'].resetFields();
+                                    app.model.value = false;
+                                    app.querySearch();
+                                }
+                            });
+                        } else {
+                            this.model.loading = false;
+                            this.$nextTick(() => {
+                                this.model.loading = true;
+                            });
+                        }
+                    });
+                },
+                cancel: function() {
+                    this.$refs['modalFormRef'].resetFields();
+                    this.model.value = false;
+                },
+                auth: function(id) {
+                    this.userRole.sysUserId = id;
+                    http.get({
+                        url: '/sysUser/role',
+                        data: {id: id},
+                        vue: this,
+                        callback: function(res) {
+                            app.roles = res.data.roles;
+                            if (res.data.roleIds) {
+                                app.userRole.sysRoleIds = res.data.roleIds;
+                            }
+                        }
+                    });
+                    this.roleModal.value = true;
+                },
+                roleOk: function() {
+                    this.$refs['roleForm'].validate((valid) => {
+                        if (valid) {
+                            http.postJson({
+                                url: '/sysUser/role',
+                                data: this.userRole,
+                                vue: this,
+                                fail: function() {
+                                    app.roleModal.loading = false;
+                                    app.$nextTick(() => {
+                                        app.roleModal.loading = true;
+                                    });
+                                },
+                                callback: function(res) {
+                                    app.$Message.success('操作成功');
+                                    app.$refs['roleForm'].resetFields();
+                                    app.roleModal.value = false;
+                                }
+                            });
+                        } else {
+                            this.roleModal.loading = false;
+                            this.$nextTick(() => {
+                                this.roleModal.loading = true;
+                            });
+                        }
+                    });
+                },
+                roleCancel: function() {
+                    this.$refs['roleForm'].resetFields();
+                    this.roleModal.value = false;
+                },
+                resetPwd: function(id) {
+                    this.$Modal.confirm({
+                        title: '该账号的登录密码将被重置为“123456”，是否确认重置？',
+                        onOk: function() {
+                            http.post({
+                                url: '/sysUser/password',
+                                data: {id: id},
+                                vue: this,
+                                callback: function(res) {
+                                    app.$Message.success('操作成功');
+                                }
+                            });
+                        }
+                    });
+                },
+                enableUser: function(id, val) {
+                    let title;
+                    if (val) {
+                        title = '禁用该账号之后，该账号将无法使用。是否确认禁用？';
+                    } else {
+                        title = '启用该账号之后，该账号可正常使用。是否确认启用？';
+                    }
+
+                    this.$Modal.confirm({
+                        title: title,
+                        onOk: function() {
+                            http.post({
+                                url: '/sysUser/enable',
+                                data: {id: id, enable: val},
+                                vue: this,
+                                callback: function(res) {
+                                    app.$Message.success('操作成功');
+                                    app.querySearch();
+                                }
+                            });
+                        }
+                    });
+                }
+            }
+        });
+    </script>
+</html>

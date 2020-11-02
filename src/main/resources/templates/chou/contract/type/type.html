@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+    <head>
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+        <title>臭臭平台</title>
+        <link rel="icon" th:href="@{/img/cc.png}" />
+        <link rel="stylesheet" th:href="@{/layui/css/layui.css}" media="all" />
+    </head>
+
+    <body style="padding: 15px;">
+        <form class="layui-form" th:object="${contractType}">
+            <input type="hidden" name="id" th:value="*{id}" readonly>
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">名称</label>
+                <div class="layui-input-block">
+                    <input type="text" name="name" th:value="*{name}" lay-verify="required" autocomplete="off" placeholder="请输入名称" class="layui-input">
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">排序号</label>
+                <div class="layui-input-block">
+                    <input type="number" name="sort" th:value="*{sort}" lay-verify="required" autocomplete="off" placeholder="请输入排序号" class="layui-input">
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">状态</label>
+                <div class="layui-input-block">
+                    <input type="radio" name="status" value="0" title="禁用" th:checked="*{status == 0}">
+                    <input type="radio" name="status" value="1" title="正常" th:checked="*{status == null or status == 1}">
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <div class="layui-input-block">
+                    <button type="submit" class="layui-btn" lay-submit="" lay-filter="submit">提交</button>
+                    <button lay-filter="close" class="layui-btn layui-btn-primary">取消</button>
+                </div>
+            </div>
+        </form>
+    </body>
+
+    <!--[if lt IE 9]>
+    <script src="https://cdn.staticfile.org/html5shiv/r29/html5.min.js"></script>
+    <script src="https://cdn.staticfile.org/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    <script th:src="@{/layui/layui.js}"></script>
+    <script>
+        layui.extend({
+            request: '/js/index/request'
+        }).use(['form', 'layer', 'request', 'jquery'], function () {
+            const form = layui.form;
+            const layer = layui.layer;
+            const request = layui.request;
+            const $ = layui.jquery;
+
+            $('button[lay-filter="close"]').on('click', function () {
+                const index = parent.layer.getFrameIndex(window.name);
+                parent.layer.close(index);
+            });
+
+            form.on('submit(submit)', function (data) {
+                const id = data.field.id;
+                const method = id == null || id == '' ? 'POST' : "PUT";
+                const message = id == null || id == '' ? '新增成功' : "修改成功";
+
+                request.jsonQs({
+                    url: '/contractType',
+                    type: method,
+                    data: data.field,
+                    callback: function (res) {
+                        layer.closeAll('loading');
+                        if (res.status !== 200) {
+                            layer.msg(res.message, {icon: 5, anim: 6});
+                            return false;
+                        }
+
+                        layer.msg(message, {
+                            icon: 6,
+                            time: 500,
+                            end: function () {
+                                const index = parent.layer.getFrameIndex(window.name);
+                                parent.layer.close(index);
+                                parent.refresh.reloadSearch();
+                            }
+                        });
+                    }
+                });
+
+                return false;
+            });
+        });
+    </script>
+</html>

@@ -1,0 +1,49 @@
+logging:
+  config: classpath:logback-spring.xml
+
+
+server:
+  port: 8080
+  servlet:
+    session:
+      timeout: 30m
+
+
+spring:
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+    serialization:
+      write-dates-as-timestamps: false
+  profiles:
+    active:
+      - dev
+  redis:
+    timeout: 3s
+    ssl: false
+  datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    hikari:
+      connection-test-query: SELECT 1
+      connection-timeout: 30000
+      pool-name: MyHikariCP
+      max-lifetime: 1800000
+      minimum-idle: 5
+      maximum-pool-size: 15
+      auto-commit: true
+  servlet:
+    multipart:
+      max-file-size: 15MB
+      max-request-size: 15MB
+
+
+mybatis-plus:
+  configuration:
+    cache-enabled: false
+    map-underscore-to-camel-case: true
+    call-setters-on-nulls: true
+  mapper-locations:
+    - classpath*:mapper/**/*Mapper.xml
+  type-aliases-package: com.gaoc.chouchou.model
+
+

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gaoc.chou.mapper.ContractReceiveMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.gaoc.chou.model.ContractReceive">
+        <id column="id" property="id" />
+        <result column="treaty_no" property="treatyNo" />
+        <result column="contract_no" property="contractNo" />
+        <result column="receive_time" property="receiveTime" />
+        <result column="model_id" property="modelId" />
+        <result column="treaty_id" property="treatyId" />
+        <result column="type_id" property="typeId" />
+        <result column="dept_id" property="deptId" />
+        <result column="post_id" property="postId" />
+        <result column="emp_id" property="empId" />
+        <result column="status" property="status" />
+        <result column="remarks" property="remarks" />
+        <result column="create_id" property="createId" />
+        <result column="create_time" property="createTime" />
+        <result column="update_id" property="updateId" />
+        <result column="update_time" property="updateTime" />
+    </resultMap>
+
+</mapper>

@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
+    <head>
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+        <title>臭臭平台</title>
+        <link rel="icon" href="img/cc.png" />
+        <link rel="stylesheet" href="viewUI-4.3.2/dist/styles/iview.css" media="all" />
+        <link rel="stylesheet" href="css/vue-treeselect.min.css" media="all" />
+    </head>
+
+    <body>
+        <div id="app" style="padding: 15px">
+            <Card :padding="15" style="margin-bottom: 10px;">
+                <i-form :model="condition" @keydown.native.enter.prevent="querySearch" label-position="right" :label-width="80" autocomplete="off">
+                    <Row :gutter="35">
+                        <i-col span="6">
+                            <form-item label="部门名称">
+                                <i-input type="text" v-model="condition.name" placeholder="请输入部门名称" clearable></i-input>
+                            </form-item>
+                        </i-col>
+
+                        <i-col span="6">
+                            <form-item label="部门状态">
+                                <i-select v-model="condition.status" placeholder="请选择部门状态" clearable>
+                                    <i-option value="0" label="禁用"></i-option>
+                                    <i-option value="1" label="正常"></i-option>
+                                </i-select>
+                            </form-item>
+                        </i-col>
+
+                        <i-col span="24">
+                            <i-button type="primary" style="float: right;" @click="querySearch">查询</i-button>
+                        </i-col>
+                    </Row>
+                </i-form>
+            </Card>
+
+            <Card :padding="15">
+                <div style="margin-bottom: 15px;">
+                    <i-button sec:authorize="hasAuthority('SYS_DEPT:ADD@POST')" @click="saveOrUpdate('', '新增部门')" type="info" icon="md-add" style="margin-right: 15px;">新增</i-button>
+                </div>
+
+                <i-table border row-key="id" size="small" max-height="480" :columns="table.columns" :data="table.data"></i-table>
+
+                <Page :total="page.total" :current="page.current" :page-size="page.size" :page-size-opts="page.opts" style="margin-top: 15px; padding-left: 5px;"
+                      show-total show-sizer @on-change="currentChange" @on-page-size-change="sizeChange"></Page>
+            </Card>
+
+            <Modal :title="model.title" v-model="model.value" @on-ok="ok" @on-cancel="cancel" :loading="model.loading" width="45%">
+                <i-form :model="dept" ref="modalFormRef" :rules="rules" label-position="right" label-width="80" autocomplete="off">
+                    <i-input type="hidden" v-model="dept.id"></i-input>
+                    <form-item label="部门名称" prop="name">
+                        <i-input type="text" v-model="dept.name" placeholder="请输入部门名称" maxlength="32" show-word-limit></i-input>
+                    </form-item>
+
+                    <form-item label="排序号" prop="sort">
+                        <input-number min="0" max="9999" v-model="dept.sort" placeholder="请输入排序号，数值越小排越前" style="width: 100%;"></input-number>
+                    </form-item>
+
+                    <form-item label="上级部门" prop="parentId">
+                        <treeselect v-model="dept.parentId" :options="options" :normalizer="normalizer" no-options-text="呀，没有数据呢" no-results-text="暂无筛选结果" style="height: 30px" placeholder="请选择上级部门" clearable />
+                    </form-item>
+
+                    <form-item label="部门状态" required>
+                        <radio-group v-model="dept.status">
+                            <Radio label="0">禁用</Radio>
+                            <Radio label="1">正常</Radio>
+                        </radio-group>
+                    </form-item>
+                </i-form>
+            </Modal>
+        </div>
+    </body>
+
+    <!--[if lt IE 9]>
+    <script src="https://cdn.staticfile.org/html5shiv/r29/html5.min.js"></script>
+    <script src="https://cdn.staticfile.org/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    <script type="text/javascript" src="js/base/vue.min.js"></script>
+    <script type="text/javascript" src="viewUI-4.3.2/dist/iview.min.js"></script>
+    <script type="text/javascript" src="js/base/jquery-3.5.1.min.js"></script>
+    <script type="text/javascript" src="js/base/lodash.min.js"></script>
+    <script type="text/javascript" src="js/base/vue-treeselect.umd.min.js"></script>
+    <script type="text/javascript" src="js/base/http.js"></script>
+
+    <script>
+        Vue.component('treeselect', VueTreeselect.Treeselect);
+
+        const app = new Vue({
+            el: '#app',
+            data: {
+                condition: {
+                    name: '',
+                    status: ''
+                },
+                page: {
+                    current: 1,
+                    size: 10,
+                    total: 0,
+                    opts: [10, 30, 50, 100]
+                },
+                table: {
+                    columns: [
+                        {
+                            title: '部门名称',
+                            key: 'name',
+                            tree: true
+                        },
+                        {
+                            title: '排序号',
+                            key: 'sort'
+                        },
+                        {
+                            title: '部门状态',
+                            key: 'status',
+                            render: (h, param) => {
+                                let color;
+                                let text;
+                                if (param.row.status === 0) {
+                                    color = 'error';
+                                    text = '禁用';
+                                } else if (param.row.status === 1) {
+                                    color = 'success';
+                                    text = '正常'
+                                } else {
+                                    color = 'warning';
+                                    text = '未知';
+                                }
+
+                                return h('Tag', {
+                                    props: {
+                                        color: color,
+                                        type: 'dot'
+                                    }
+                                }, text);
+                            }
+                        }
+                    ],
+                    data: []
+                },
+                model: {
+                    value: false,
+                    loading: true,
+                    title: ''
+                },
+                temp: '',
+                dept: {
+                    id: '',
+                    name: '',
+                    sort: '',
+                    parentId: null,
+                    status: '1'
+                },
+                options: [],
+                normalizer: function(node) {
+                    return {
+                        id: node.id,
+                        label: node.name,
+                        children: node.children
+                    };
+                },
+                rules: {
+                    name: [
+                        {required: true, message: '部门名称不能为空', trigger: 'blur'}
+                    ],
+                    sort: [
+                        {required: true, type: 'number', message: '排序号不能为空', trigger: 'blur'},
+                        {pattern: /^(0|[1-9][0-9]*)$/, type: 'number', message: '排序号只能为正整数', trigger: 'blur'}
+                    ]
+                }
+            },
+            created: function() {
+                // 初始化权限按钮
+                this.initBtn();
+                // 初始化表格数据
+                this.querySearch();
+                // 初始化表单初始数据
+                this.temp = this.dept;
+            },
+            methods: {
+                initBtn: function() {
+                    const roles = JSON.parse(window.localStorage.getItem('ROLE_CODE'));
+                    const edit = $.inArray('SYS_DEPT:EDIT@PUT', roles);
+                    const remove = $.inArray('SYS_DEPT:REMOVE@DELETE', roles);
+                    if (edit >= 0 || remove >= 0) {
+                        const action = {
+                            title: '操作',
+                            key: 'action',
+                            render: (h, param) => {
+                                const buttons = [];
+                                if (edit >= 0) {
+                                    buttons.push(h('Button', {
+                                        props: {
+                                            type: 'primary',
+                                            size: 'small',
+                                            icon: 'md-create'
+                                        },
+                                        style: {
+                                            marginRight: '10px'
+                                        },
+                                        on: {
+                                            click: () => {
+                                                this.saveOrUpdate(param.row, '编辑部门');
+                                            }
+                                        }
+                                    }, '编辑'));
+                                }
+
+                                if (remove >= 0 && !param.row.children.length) {
+                                    buttons.push(h('Button', {
+                                        props: {
+                                            type: 'error',
+                                            size: 'small',
+                                            icon: 'md-trash'
+                                        },
+                                        style: {
+                                            marginRight: '10px'
+                                        },
+                                        on: {
+                                            click: () => {
+                                                this.del(param.row.id);
+                                            }
+                                        }
+                                    }, '删除'));
+                                }
+
+                                return h('div', buttons);
+                            }
+                        };
+
+                        this.table.columns.push(action);
+                    }
+                },
+                currentChange: function(current) {
+                    this.page.current = current;
+                    this.querySearch();
+                },
+                sizeChange: function(size) {
+                    this.page.size = size;
+                    this.querySearch();
+                },
+                querySearch: function() {
+                    this.condition['current'] = this.page.current;
+                    this.condition['size'] = this.page.size;
+                    http.get({
+                        url: '/sysDept/query',
+                        data: this.condition,
+                        vue: this,
+                        callback: function (res) {
+                            app.page.current = res.data.current;
+                            app.page.size = res.data.size;
+                            app.page.total = res.data.total;
+                            app.table.data = app.recursion(res.data.records);
+                        }
+                    });
+                },
+                recursion: function(items) {
+                    _(items).forEach(function(item) {
+                        if (item.children.length) {
+                            item['_showChildren'] = true;
+                            app.recursion(item.children);
+                        }
+                    });
+
+                    return items;
+                },
+                saveOrUpdate: function(data, title) {
+                    this.model.title = title;
+                    if (data) {
+                        this.dept = _.cloneDeep(data);
+                        this.dept.status = this.dept.status + '';
+                        if (this.dept.parentId === '') {
+                            this.dept.parentId = null;
+                        }
+                    } else {
+                        this.dept = _.cloneDeep(this.temp);
+                    }
+
+                    http.post({
+                        url: '/sysDept/tree',
+                        data: {id: this.dept.id},
+                        vue: this,
+                        callback: function(res) {
+                            app.options = res.data;
+                        }
+                    });
+
+                    this.model.value = true;
+                },
+                ok: function() {
+                    this.$refs['modalFormRef'].validate((valid) => {
+                        if (valid) {
+                            const method = this.dept.id ? 'PUT' : 'POST';
+                            const message = this.dept.id ? '编辑成功' : '新增成功';
+                            http.jsonQs({
+                                url: '/sysDept',
+                                type: method,
+                                data: this.dept,
+                                vue: this,
+                                fail: function() {
+                                    app.model.loading = false;
+                                    app.$nextTick(() => {
+                                        app.model.loading = true;
+                                    });
+                                },
+                                callback: function(res) {
+                                    app.$Message.success(message);
+                                    app.$refs['modalFormRef'].resetFields();
+                                    app.model.value = false;
+                                    app.querySearch();
+                                }
+                            });
+                        } else {
+                            this.model.loading = false;
+                            this.$nextTick(() => {
+                                this.model.loading = true;
+                            });
+                        }
+                    });
+                },
+                cancel: function() {
+                    this.$refs['modalFormRef'].resetFields();
+                    this.model.value = false;
+                },
+                del: function(id) {
+                    if (!id) {
+                        this.$Message.error('请选择要操作的数据');
+                        return false;
+                    }
+
+                    this.$Modal.confirm({
+                        title: '是否确认删除？',
+                        onOk: function() {
+                            http.delete({
+                                url: '/sysDept?id=' + id,
+                                vue: this,
+                                callback: function(res) {
+                                    app.$Message.success('操作成功');
+                                    app.querySearch();
+                                }
+                            });
+                        }
+                    });
+                }
+            }
+        });
+    </script>
+</html>

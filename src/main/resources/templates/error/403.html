@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+        <title>臭臭平台</title>
+        <link rel="icon" href="img/cc.png" />
+        <style>
+            html body {
+                margin: 0;
+                padding: 0;
+            }
+
+            canvas {
+                display: block;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div></div>
+    </body>
+
+    <script>
+        const canvas = document.createElement('canvas');
+        let height = canvas.height = window.innerHeight;
+        let width = canvas.width = window.innerWidth;
+        let ctx = canvas.getContext('2d');
+        document.body.appendChild(canvas);
+
+        function random(min, max) {
+            return Math.random() * (max - min + 1) + min;
+        }
+
+        window.onresize = function () {
+            height = canvas.height = window.innerHeight;
+            width = canvas.width = window.innerWidth;
+            render();
+        }
+
+        function range_map(value, in_min, in_max, out_min, out_max) {
+            return (value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+        }
+
+        const word_arr = [];
+        const txt_min_size = 5;
+        const txt_max_size = 25;
+        let keypress = false;
+        const acclerate = 2;
+        for (let i = 0; i < 25; i++) {
+            word_arr.push({
+                x : random(0, width),
+                y : random(0, height),
+                text : '你有你的实力，我有我的背景，不是很硬，但你别碰！',
+                size : random(txt_min_size, txt_max_size)
+            });
+
+            word_arr.push({
+                x : random(0, width),
+                y : random(0, height),
+                text : '哦豁',
+                size : random(txt_min_size, txt_max_size)
+            });
+
+
+            word_arr.push({
+                x : random(0, width),
+                y : random(0, height),
+                text : '没权限了...',
+                size : random(txt_min_size, txt_max_size)
+            });
+
+            word_arr.push({
+                x : random(0, width),
+                y : random(0, height),
+                text : '我不能看？',
+                size : Math.floor(random(txt_min_size, txt_max_size))
+            });
+        }
+
+        function render() {
+            ctx.fillStyle = "rgba(0,0,0,1)";
+            ctx.fillRect(0, 0, width, height);
+
+            ctx.fillStyle = "#fff";
+            for (let i = 0; i < word_arr.length; i++) {
+                ctx.font = word_arr[i].size + "px sans-serif";
+                const w = ctx.measureText(word_arr[i].text);
+                ctx.fillText(word_arr[i].text, word_arr[i].x, word_arr[i].y);
+
+                if(keypress) {
+                    word_arr[i].x += range_map(word_arr[i].size, txt_min_size, txt_max_size, 2, 4) * acclerate;
+                } else {
+                    word_arr[i].x += range_map(word_arr[i].size, txt_min_size, txt_max_size, 2, 3);
+                }
+
+                if(word_arr[i].x >= width) {
+                    word_arr[i].x = -w.width * 2;
+                    word_arr[i].y = random(0, height);
+                    word_arr[i].size =  Math.floor(random(txt_min_size, txt_max_size));
+
+                }
+            }
+
+            ctx.fill();
+
+            requestAnimationFrame(render);
+        }
+
+        render();
+
+        window.addEventListener('keydown', function() {
+            keypress = true;
+        }, true);
+
+        window.addEventListener('keyup', function() {
+            keypress = false;
+        }, true);
+    </script>
+</html>
